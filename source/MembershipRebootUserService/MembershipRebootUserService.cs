@@ -110,6 +110,33 @@ namespace Thinktecture.IdentityServer.MembershipReboot
             return name;
         }
 
+        public virtual Task<AuthenticateResult> AuthenticateEmailLocalAsync(string email, string password, SignInMessage message)
+        {
+            TAccount account;
+            if(userAccountService.AuthenticateWithEmail(email, password, out account))
+            {
+                var subject = account.ID.ToString("D");
+                var name = GetDisplayNameForAccount(account.ID);
+                var p = IdentityServerPrincipal.Create(subject, name);
+                return Task.FromResult(new AuthenticateResult(p));
+            }
+
+            if (account != null)
+            {
+                if (!account.IsLoginAllowed)
+                {
+                    return Task.FromResult(new AuthenticateResult("Account is not allowed to login"));
+                }
+
+                if (account.IsAccountClosed)
+                {
+                    return Task.FromResult(new AuthenticateResult("Account is closed"));
+                }
+            }
+
+            return Task.FromResult<AuthenticateResult>(null);
+        }
+
         public virtual Task<AuthenticateResult> AuthenticateLocalAsync(string username, string password, SignInMessage message)
         {
             TAccount account;
